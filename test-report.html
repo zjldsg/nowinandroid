@@ -76,23 +76,9 @@
         .badge-purple{ background: #f3e8ff; color: #9333ea; }
         .badge-gray  { background: #f3f4f6; color: #6b7280; }
 
-        .notice {
-            background: #eff6ff; border: 1px solid #bfdbfe;
-            border-radius: 10px; padding: 16px 20px; margin-bottom: 32px;
-            font-size: 14px; color: #1e40af;
-        }
-        .notice strong { color: #1d4ed8; }
-
         .legend { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
         .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #666; }
         .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
-
-        .highlight-box {
-            background: #fffbeb; border: 1px solid #fde68a;
-            border-radius: 10px; padding: 14px 20px; margin-bottom: 32px;
-            font-size: 13px; color: #92400e;
-        }
-        .highlight-box strong { color: #b45309; }
     </style>
 </head>
 <body>
@@ -103,18 +89,6 @@
         本地测试 (JVM) &middot; Variant: <strong>demoDebug</strong> &middot;
         日期: 2026-06-14 &middot; 含 JaCoCo 代码覆盖率
     </p>
-
-    <div class="notice">
-        <strong>&#9888; 注意：</strong>原有 <code>app/src/androidTest/</code> 下的设备测试已删除。
-        当前报告仅包含 <strong>JVM 本地测试</strong>，区分 <strong>单元测试</strong> 与 <strong>集成测试</strong>。
-        代码覆盖率由 <strong>JaCoCo 0.8.12</strong> 采集（仅单元测试执行数据）。
-    </div>
-
-    <div class="highlight-box">
-        <strong>&#9432; 覆盖率说明：</strong>当前覆盖率仅反映<b>本地单元测试</b>的执行覆盖（不含设备测试）。
-        完整覆盖率需结合设备测试（androidTest）的 <code>.ec</code> 文件合并生成。
-        3 个模块（<code>core/navigation</code>, <code>feature/bookmarks</code>, <code>feature/foryou</code>）未启用 JaCoCo 插件，显示 N/A。
-    </div>
 
     <!-- Summary -->
     <div class="summary">
