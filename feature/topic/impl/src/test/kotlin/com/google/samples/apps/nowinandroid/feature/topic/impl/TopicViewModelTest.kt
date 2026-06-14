@@ -36,6 +36,7 @@ import org.junit.Rule
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * To learn more about how this test handles Flows created with stateIn, see
@@ -151,6 +152,65 @@ class TopicViewModelTest {
             TopicUiState.Success(followableTopic = testOutputTopics[0]),
             viewModel.topicUiState.value,
         )
+    }
+
+    @Test
+    fun uiStateTopic_whenUnfollowingTopic_thenShowUpdatedTopic() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher()) { viewModel.topicUiState.collect() }
+
+        topicsRepository.sendTopics(testInputTopics.map { it.topic })
+        // Include topic 0 in followed set initially
+        userDataRepository.setFollowedTopicIds(setOf(testInputTopics[0].topic.id))
+
+        // Now unfollow
+        viewModel.followTopicToggle(false)
+
+        val expected = FollowableTopic(
+            topic = testInputTopics[0].topic,
+            isFollowed = false,
+        )
+        assertEquals(
+            TopicUiState.Success(followableTopic = expected),
+            viewModel.topicUiState.value,
+        )
+    }
+
+    @Test
+    fun bookmarkNews_addsToBookmarkedNewsResources() = runTest {
+        val newsResourceId = "news-1"
+        viewModel.bookmarkNews(newsResourceId, bookmarked = true)
+
+        val bookmarked = userDataRepository.userData.first().bookmarkedNewsResources
+        assertTrue(newsResourceId in bookmarked)
+    }
+
+    @Test
+    fun bookmarkNews_removesFromBookmarkedNewsResources() = runTest {
+        val newsResourceId = "news-1"
+        viewModel.bookmarkNews(newsResourceId, bookmarked = true)
+        viewModel.bookmarkNews(newsResourceId, bookmarked = false)
+
+        val bookmarked = userDataRepository.userData.first().bookmarkedNewsResources
+        assertTrue(newsResourceId !in bookmarked)
+    }
+
+    @Test
+    fun setNewsResourceViewed_marksResourceAsViewed() = runTest {
+        val newsResourceId = "news-42"
+        viewModel.setNewsResourceViewed(newsResourceId, viewed = true)
+
+        val viewed = userDataRepository.userData.first().viewedNewsResources
+        assertTrue(newsResourceId in viewed)
+    }
+
+    @Test
+    fun setNewsResourceViewed_unmarksResourceAsViewed() = runTest {
+        val newsResourceId = "news-42"
+        viewModel.setNewsResourceViewed(newsResourceId, viewed = true)
+        viewModel.setNewsResourceViewed(newsResourceId, viewed = false)
+
+        val viewed = userDataRepository.userData.first().viewedNewsResources
+        assertTrue(newsResourceId !in viewed)
     }
 }
 

@@ -45,7 +45,9 @@ class AndroidApplicationFirebaseConventionPlugin : Plugin<Project> {
                     exclude(group = "com.google.protobuf", module = "protobuf-javalite")
                     exclude(group = "com.google.firebase", module = "protolite-well-known-types")
                 }
-                "implementation"(libs.findLibrary("firebase.crashlytics").get())
+                // Crashlytics NDK libs are not available for x86_64 in debug,
+                // causing crashes on emulator/GMD. Only include for release builds.
+                "releaseImplementation"(libs.findLibrary("firebase.crashlytics").get())
             }
 
             extensions.configure<ApplicationExtension> {

@@ -27,9 +27,9 @@ import org.gradle.kotlin.dsl.invoke
 internal fun configureGradleManagedDevices(
     commonExtension: CommonExtension,
 ) {
-    val pixel4 = DeviceConfig("Pixel 4", 30, "aosp-atd")
-    val pixel6 = DeviceConfig("Pixel 6", 31, "aosp")
-    val pixelC = DeviceConfig("Pixel C", 30, "aosp-atd")
+    val pixel4 = DeviceConfig("Pixel 4", 30, "aosp-atd", "x86_64")
+    val pixel6 = DeviceConfig("Pixel 6", 31, "aosp", "x86_64")
+    val pixelC = DeviceConfig("Pixel C", 30, "aosp-atd", "x86_64")
 
     val allDevices = listOf(pixel4, pixel6, pixelC)
     val ciDevices = listOf(pixel4, pixelC)
@@ -43,6 +43,7 @@ internal fun configureGradleManagedDevices(
                         device = deviceConfig.device
                         apiLevel = deviceConfig.apiLevel
                         systemImageSource = deviceConfig.systemImageSource
+                        testedAbi = deviceConfig.testedAbi
                     }
                 }
             }
@@ -61,6 +62,7 @@ private data class DeviceConfig(
     val device: String,
     val apiLevel: Int,
     val systemImageSource: String,
+    val testedAbi: String = "x86_64",
 ) {
     val taskName = buildString {
         append(device.lowercase().replace(" ", ""))

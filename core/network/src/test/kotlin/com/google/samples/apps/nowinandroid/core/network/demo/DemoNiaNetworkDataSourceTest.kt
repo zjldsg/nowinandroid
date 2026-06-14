@@ -17,6 +17,7 @@
 package com.google.samples.apps.nowinandroid.core.network.demo
 
 import JvmUnitTestDemoAssetManager
+import com.google.samples.apps.nowinandroid.core.network.model.NetworkChangeList
 import com.google.samples.apps.nowinandroid.core.network.model.NetworkNewsResource
 import com.google.samples.apps.nowinandroid.core.network.model.NetworkTopic
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -28,6 +29,8 @@ import kotlinx.serialization.json.Json
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class DemoNiaNetworkDataSourceTest {
 
@@ -84,5 +87,35 @@ class DemoNiaNetworkDataSourceTest {
             ),
             subject.getNewsResources().find { it.id == "125" },
         )
+    }
+
+    @Test
+    fun testGetTopicChangeList_returnsMappedList() = runTest(testDispatcher) {
+        val changeLists = subject.getTopicChangeList()
+
+        assertTrue(changeLists.isNotEmpty(), "Topic change list should not be empty")
+        changeLists.forEach { changeList ->
+            assertTrue(changeList.id.isNotEmpty(), "Each change list should have a non-empty id")
+            assertFalse(changeList.isDelete, "Demo change lists should not have isDelete flag")
+        }
+        // Verify sequential version numbers
+        changeLists.forEachIndexed { index, changeList ->
+            assertEquals(index, changeList.changeListVersion, "Version should match index")
+        }
+    }
+
+    @Test
+    fun testGetNewsResourceChangeList_returnsMappedList() = runTest(testDispatcher) {
+        val changeLists = subject.getNewsResourceChangeList()
+
+        assertTrue(changeLists.isNotEmpty(), "News resource change list should not be empty")
+        changeLists.forEach { changeList ->
+            assertTrue(changeList.id.isNotEmpty(), "Each change list should have a non-empty id")
+            assertFalse(changeList.isDelete, "Demo change lists should not have isDelete flag")
+        }
+        // Verify sequential version numbers
+        changeLists.forEachIndexed { index, changeList ->
+            assertEquals(index, changeList.changeListVersion, "Version should match index")
+        }
     }
 }

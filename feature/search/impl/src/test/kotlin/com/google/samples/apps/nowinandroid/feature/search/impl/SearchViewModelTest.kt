@@ -17,9 +17,13 @@
 package com.google.samples.apps.nowinandroid.feature.search.impl
 
 import androidx.lifecycle.SavedStateHandle
-import com.google.samples.apps.nowinandroid.core.analytics.NoOpAnalyticsHelper
+import com.google.samples.apps.nowinandroid.core.analytics.AnalyticsEvent
 import com.google.samples.apps.nowinandroid.core.domain.GetRecentSearchQueriesUseCase
 import com.google.samples.apps.nowinandroid.core.domain.GetSearchContentsUseCase
+import com.google.samples.apps.nowinandroid.core.model.data.FollowableTopic
+import com.google.samples.apps.nowinandroid.core.model.data.NewsResource
+import com.google.samples.apps.nowinandroid.core.model.data.Topic
+import com.google.samples.apps.nowinandroid.core.model.data.UserNewsResource
 import com.google.samples.apps.nowinandroid.core.testing.data.newsResourcesTestData
 import com.google.samples.apps.nowinandroid.core.testing.data.topicsTestData
 import com.google.samples.apps.nowinandroid.core.testing.repository.TestRecentSearchRepository
@@ -27,6 +31,7 @@ import com.google.samples.apps.nowinandroid.core.testing.repository.TestSearchCo
 import com.google.samples.apps.nowinandroid.core.testing.repository.TestUserDataRepository
 import com.google.samples.apps.nowinandroid.core.testing.repository.emptyUserData
 import com.google.samples.apps.nowinandroid.core.testing.util.MainDispatcherRule
+import com.google.samples.apps.nowinandroid.core.testing.util.TestAnalyticsHelper
 import com.google.samples.apps.nowinandroid.feature.search.impl.RecentSearchQueriesUiState.Success
 import com.google.samples.apps.nowinandroid.feature.search.impl.SearchResultUiState.EmptyQuery
 import com.google.samples.apps.nowinandroid.feature.search.impl.SearchResultUiState.Loading
@@ -41,7 +46,9 @@ import org.junit.Rule
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * To learn more about how this test handles Flows created with stateIn, see
@@ -60,6 +67,7 @@ class SearchViewModelTest {
     )
     private val recentSearchRepository = TestRecentSearchRepository()
     private val getRecentQueryUseCase = GetRecentSearchQueriesUseCase(recentSearchRepository)
+    private val analyticsHelper = TestAnalyticsHelper()
 
     private lateinit var viewModel: SearchViewModel
 
@@ -72,7 +80,7 @@ class SearchViewModelTest {
             savedStateHandle = SavedStateHandle(),
             recentSearchRepository = recentSearchRepository,
             userDataRepository = userDataRepository,
-            analyticsHelper = NoOpAnalyticsHelper(),
+            analyticsHelper = analyticsHelper,
         )
         userDataRepository.setUserData(emptyUserData)
     }
@@ -176,5 +184,164 @@ class SearchViewModelTest {
             expected = emptySet(),
             actual = userDataRepository.userData.first().bookmarkedNewsResources,
         )
+    }
+
+    @Test
+    fun search_withMatchingQuery_returnsSuccessWithResults() = runTest {
+        searchContentsRepository.addNewsResources(newsResourcesTestData)
+        searchContentsRepository.addTopics(topicsTestData)
+        backgroundScope.launch(UnconfinedTestDispatcher()) { viewModel.searchResultUiState.collect() }
+
+        // "Android" appears in newsResourcesTestData[0].title
+        viewModel.onSearchQueryChanged("Android")
+
+        val result = viewModel.searchResultUiState.value
+        assertIs<SearchResultUiState.Success>(result)
+        assertTrue(result.newsResources.isNotEmpty(), "Should have matching news resources")
+    }
+
+    @Test
+    fun search_withMatchingTopicName_returnsTopicInResults() = runTest {
+        searchContentsRepository.addTopics(topicsTestData)
+        searchContentsRepository.addNewsResources(newsResourcesTestData)
+        backgroundScope.launch(UnconfinedTestDispatcher()) { viewModel.searchResultUiState.collect() }
+
+        // "Headlines" is the name of topicsTestData[0]
+        viewModel.onSearchQueryChanged("Headlines")
+
+        val result = viewModel.searchResultUiState.value
+        assertIs<SearchResultUiState.Success>(result)
+        assertTrue(result.topics.any { it.topic.name == "Headlines" }, "Should match 'Headlines' topic")
+    }
+
+    @Test
+    fun successState_withEmptyResults_isEmpty() = runTest {
+        val emptySuccess = SearchResultUiState.Success()
+        assertTrue(emptySuccess.isEmpty())
+
+        val nonEmptySuccess = SearchResultUiState.Success(
+            topics = listOf(
+                FollowableTopic(
+                    topic = Topic(
+                        id = "1",
+                        name = "Test",
+                        shortDescription = "",
+                        longDescription = "",
+                        url = "",
+                        imageUrl = "",
+                    ),
+                    isFollowed = false,
+                ),
+            ),
+        )
+        assertTrue(!nonEmptySuccess.isEmpty())
+    }
+
+    @Test
+    fun onSearchTriggered_withValidQuery_addsToRecentSearches() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher()) { viewModel.recentSearchQueriesUiState.collect() }
+
+        viewModel.onSearchTriggered("kotlin flows")
+
+        val recentQueries = getRecentQueryUseCase().first()
+        assertTrue(recentQueries.any { it.query == "kotlin flows" }, "Recent search should contain the query")
+    }
+
+    @Test
+    fun onSearchTriggered_withValidQuery_logsAnalyticsEvent() = runTest {
+        viewModel.onSearchTriggered("dagger hilt")
+
+        val searchEvent = AnalyticsEvent(
+            type = "searchQuery",
+            extras = listOf(AnalyticsEvent.Param(key = "searchQuery", value = "dagger hilt")),
+        )
+        assertTrue(analyticsHelper.hasLogged(searchEvent), "Should log search analytics event")
+    }
+
+    @Test
+    fun onSearchTriggered_withBlankQuery_doesNotSave() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher()) { viewModel.recentSearchQueriesUiState.collect() }
+
+        viewModel.onSearchTriggered("   ")
+
+        val recentQueries = getRecentQueryUseCase().first()
+        assertTrue(recentQueries.none { it.query == "   " }, "Blank query should not be saved")
+    }
+
+    @Test
+    fun clearRecentSearches_removesAllQueries() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher()) { viewModel.recentSearchQueriesUiState.collect() }
+
+        viewModel.onSearchTriggered("kotlin")
+        viewModel.onSearchTriggered("compose")
+
+        var recentQueries = getRecentQueryUseCase().first()
+        assertTrue(recentQueries.size >= 2, "Should have at least 2 recent queries before clearing")
+
+        viewModel.clearRecentSearches()
+
+        recentQueries = getRecentQueryUseCase().first()
+        assertTrue(recentQueries.isEmpty(), "Recent searches should be empty after clearing")
+    }
+
+    @Test
+    fun followTopic_addsTopicToFollowed() = runTest {
+        val topicId = "topic-42"
+        viewModel.followTopic(topicId, followed = true)
+
+        val followedTopics = userDataRepository.userData.first().followedTopics
+        assertTrue(topicId in followedTopics, "Topic should be in followed set")
+    }
+
+    @Test
+    fun unfollowTopic_removesTopicFromFollowed() = runTest {
+        val topicId = "topic-42"
+        viewModel.followTopic(topicId, followed = true)
+        viewModel.followTopic(topicId, followed = false)
+
+        val followedTopics = userDataRepository.userData.first().followedTopics
+        assertTrue(topicId !in followedTopics, "Topic should not be in followed set")
+    }
+
+    @Test
+    fun setNewsResourceViewed_marksAsViewed() = runTest {
+        val newsId = "news-99"
+        viewModel.setNewsResourceViewed(newsId, viewed = true)
+
+        val viewedResources = userDataRepository.userData.first().viewedNewsResources
+        assertTrue(newsId in viewedResources, "News resource should be marked as viewed")
+    }
+
+    @Test
+    fun setNewsResourceViewed_unmarksAsViewed() = runTest {
+        val newsId = "news-99"
+        viewModel.setNewsResourceViewed(newsId, viewed = true)
+        viewModel.setNewsResourceViewed(newsId, viewed = false)
+
+        val viewedResources = userDataRepository.userData.first().viewedNewsResources
+        assertTrue(newsId !in viewedResources, "News resource should be unmarked as viewed")
+    }
+
+    @Test
+    fun onSearchQueryChanged_emitsUpdatedQuery() = runTest {
+        viewModel.onSearchQueryChanged("jetpack")
+        assertEquals("jetpack", viewModel.searchQuery.value)
+    }
+
+    @Test
+    fun recentSearchQueries_initialState_isLoading() = runTest {
+        assertEquals(
+            RecentSearchQueriesUiState.Loading,
+            viewModel.recentSearchQueriesUiState.value,
+        )
+    }
+
+    @Test
+    fun recentSearchQueries_afterTrigger_changesToSuccess() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher()) { viewModel.recentSearchQueriesUiState.collect() }
+        viewModel.onSearchTriggered("workmanager")
+
+        val result = viewModel.recentSearchQueriesUiState.value
+        assertIs<RecentSearchQueriesUiState.Success>(result)
     }
 }

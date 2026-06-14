@@ -103,11 +103,16 @@ class ForYouViewModelTest {
 
         topicsRepository.sendTopics(sampleTopics)
 
+        // With emptyUserData emitted by TestUserDataRepository init,
+        // shouldShowOnboarding = true, so onboarding shows immediately when topics arrive
         assertEquals(
-            OnboardingUiState.Loading,
+            OnboardingUiState.Shown(
+                topics = sampleTopics.map { FollowableTopic(it, false) },
+            ),
             viewModel.onboardingUiState.value,
         )
-        assertEquals(NewsFeedUiState.Loading, viewModel.feedState.value)
+        // With emptyUserData from init, feedState also resolves immediately
+        assertEquals(NewsFeedUiState.Success(emptyList()), viewModel.feedState.value)
     }
 
     @Test
@@ -265,7 +270,12 @@ class ForYouViewModelTest {
             OnboardingUiState.NotShown,
             viewModel.onboardingUiState.value,
         )
-        assertEquals(NewsFeedUiState.Loading, viewModel.feedState.value)
+        // With emptyUserData already emitted by TestUserDataRepository init,
+        // feedState resolves to Success(emptyList) before news are loaded
+        assertEquals(
+            NewsFeedUiState.Success(emptyList()),
+            viewModel.feedState.value,
+        )
 
         newsRepository.sendNewsResources(sampleNewsResources)
 

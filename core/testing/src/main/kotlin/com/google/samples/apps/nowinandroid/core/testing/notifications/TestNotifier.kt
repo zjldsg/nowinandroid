@@ -28,6 +28,10 @@ class TestNotifier : Notifier {
 
     val addedNewsResources: List<List<NewsResource>> = mutableAddedNewResources
 
+    fun clear() {
+        mutableAddedNewResources.clear()
+    }
+
     override fun postNewsNotifications(newsResources: List<NewsResource>) {
         mutableAddedNewResources.add(newsResources)
     }
