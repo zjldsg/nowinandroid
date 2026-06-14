@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="4.3">
+<file name="C:/Users/mac/Downloads/nowinandroid-main/nowinandroid-main/app/src/main/kotlin/com/google/samples/apps/nowinandroid/MainActivity.kt">
+	<error line="78" column="18" severity="warning" message="The function onCreate is too long (63). The maximum length is 60." source="detekt.LongMethod" />
+</file>
+<file name="C:/Users/mac/Downloads/nowinandroid-main/nowinandroid-main/app/src/main/kotlin/com/google/samples/apps/nowinandroid/ui/NiaApp.kt">
+	<error line="141" column="14" severity="warning" message="The function NiaApp is too long (117). The maximum length is 60." source="detekt.LongMethod" />
+	<error line="124" column="21" severity="warning" message="Potential unfinished work" source="detekt.ForbiddenComment" />
+	<error line="274" column="17" severity="warning" message="Potential unfinished work" source="detekt.ForbiddenComment" />
+	<error line="293" column="36" severity="warning" message="This expression contains a magic number. Consider defining it to a well named constant." source="detekt.MagicNumber" />
+	<error line="294" column="37" severity="warning" message="This expression contains a magic number. Consider defining it to a well named constant." source="detekt.MagicNumber" />
+</file>
+</checkstyle>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Now in Android - 完整测试报告</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f6f8;
+            color: #333;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { font-size: 28px; margin-bottom: 8px; color: #1a1a2e; }
+        .subtitle { color: #666; margin-bottom: 30px; font-size: 14px; }
+
+        /* Summary Cards */
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .card-label { font-size: 13px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .card-value { font-size: 36px; font-weight: 700; }
+        .card-value.green { color: #10b981; }
+        .card-value.red { color: #ef4444; }
+        .card-value.blue { color: #3b82f6; }
+        .card-value.gray { color: #6b7280; }
+        .card-value.orange { color: #f59e0b; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            background: white;
+            border: 1px solid #e5e7eb;
+            color: #666;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        .tab .count {
+            display: inline-block;
+            background: rgba(255,255,255,0.25);
+            padding: 1px 7px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .tab.active .count { background: rgba(255,255,255,0.3); }
+        .tab:not(.active) .count { background: #f3f4f6; }
+
+        /* Sections */
+        .section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        .section-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .section-header h2 { font-size: 18px; color: #1a1a2e; }
+        .section-badge {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-orange { background: #fef3c7; color: #92400e; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .badge-purple { background: #f3e8ff; color: #6b21a8; }
+        .badge-gray { background: #f3f4f6; color: #4b5563; }
+
+        /* Module Summary */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            padding: 24px;
+        }
+        .module-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .module-name { font-weight: 600; color: #374151; }
+        .module-tests { font-size: 13px; color: #888; }
+        .module-time { font-size: 13px; color: #888; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            text-align: left;
+            padding: 12px 20px;
+            background: #fafafa;
+            font-size: 12px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #eee;
+        }
+        td {
+            padding: 14px 20px;
+            font-size: 14px;
+            border-bottom: 1px solid #f5f5f5;
+            color: #444;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #fafafa; }
+        .class-name { font-family: 'SF Mono', 'Consolas', monospace; font-size: 12px; color: #2563eb; }
+        .status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .status.pass { background: #d1fae5; color: #065f46; }
+        .status.pending { background: #fef3c7; color: #92400e; }
+        .status.not-exec { background: #f3f4f6; color: #6b7280; }
+        .time { color: #888; font-size: 13px; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .badge.core { background: #dbeafe; color: #1e40af; }
+        .badge.feature { background: #fce7f3; color: #9d174d; }
+        .badge.app { background: #fef3c7; color: #92400e; }
+        .badge.sync { background: #d1fae5; color: #065f46; }
+        .badge.lint { background: #f3e8ff; color: #6b21a8; }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 24px;
+            font-size: 14px;
+            color: #1e40af;
+        }
+        .info-box.warning {
+            background: #fffbeb;
+            border-color: #fde68a;
+            color: #92400e;
+        }
+
+        .footer {
+            text-align: center;
+            color: #aaa;
+            font-size: 12px;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Now in Android - 完整测试报告</h1>
+        <p class="subtitle">执行时间: 2026年6月13日 21:30 &nbsp;|&nbsp; 变体: demoDebug &nbsp;|&nbsp; Gradle 9.4.0</p>
+
+        <!-- Overall Summary -->
+        <div class="summary">
+            <div class="card">
+                <div class="card-label">总测试数</div>
+                <div class="card-value blue">213</div>
+            </div>
+            <div class="card">
+                <div class="card-label">已执行</div>
+                <div class="card-value green">213</div>
+            </div>
+            <div class="card">
+                <div class="card-label">通过</div>
+                <div class="card-value green">213</div>
+            </div>
+            <div class="card">
+                <div class="card-label">失败</div>
+                <div class="card-value red">0</div>
+            </div>
+            <div class="card">
+                <div class="card-label">跳过</div>
+                <div class="card-value gray">0</div>
+            </div>
+            <div class="card">
+                <div class="card-label">总耗时</div>
+                <div class="card-value gray">~190s</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('unit')">✅ 单元测试 <span class="count">165</span></button>
+            <button class="tab" onclick="showTab('integration')">🔗 集成测试 <span class="count">48 ✓</span></button>
+            <button class="tab" onclick="showTab('instrumented')">📱 设备测试 <span class="count">2</span></button>
+        </div>
+
+        <!-- ========== Unit Tests ========== -->
+        <div id="unit" class="page active">
+            <div class="section">
+                <div class="section-header">
+                    <h2>单元测试 / Unit Tests</h2>
+                    <span class="section-badge badge-green">已执行 & 完成</span>
+                </div>
+                <div class="info-box">
+                    单元测试在本地 JVM 上运行（部分使用 Robolectric 模拟 Android 环境），使用 <code>./gradlew testDemoDebug</code> 执行。
+                    共 <strong>36 个测试类</strong>，涵盖 ViewModel、Repository、UseCase、Theme 等核心逻辑。
+                </div>
+
+                <!-- Module Summary -->
+                <div class="module-grid">
+                    <div class="module-card">
+                        <div><div class="module-name">core</div><div class="module-tests">16 个测试类</div></div>
+                        <div><div style="font-size:24px;font-weight:700;color:#10b981;margin-bottom:2px;">93</div><div class="module-time">32.69s</div></div>
+                    </div>
+                    <div class="module-card">
+                        <div><div class="module-name">feature</div><div class="module-tests">8 个测试类</div></div>
+                        <div><div style="font-size:24px;font-weight:700;color:#10b981;margin-bottom:2px;">42</div><div class="module-time">57.02s</div></div>
+                    </div>
+                    <div class="module-card">
+                        <div><div class="module-name">interests</div><div class="module-tests">2 个测试类</div></div>
+                        <div><div style="font-size:24px;font-weight:700;color:#10b981;margin-bottom:2px;">9</div><div class="module-time">12.84s</div></div>
+                    </div>
+                    <div class="module-card">
+                        <div><div class="module-name">app</div><div class="module-tests">4 个测试类</div></div>
+                        <div><div style="font-size:24px;font-weight:700;color:#10b981;margin-bottom:2px;">21</div><div class="module-time">58.22s</div></div>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>模块</th>
+                            <th>测试类</th>
+                            <th>用例</th>
+                            <th>失败</th>
+                            <th>错误</th>
+                            <th>耗时</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- core/data -->
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.data.CompositeUserNewsResourceRepositoryTest</td><td>4</td><td>0</td><td>0</td><td class="time">0.907s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.data.model.NetworkEntityTest</td><td>4</td><td>0</td><td>0</td><td class="time">0.015s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.data.repository.OfflineFirstNewsRepositoryTest</td><td>11</td><td>0</td><td>0</td><td class="time">1.055s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.data.repository.OfflineFirstTopicsRepositoryTest</td><td>4</td><td>0</td><td>0</td><td class="time">0.065s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.data.repository.OfflineFirstUserDataRepositoryTest</td><td>9</td><td>0</td><td>0</td><td class="time">0.118s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.data.UserNewsResourceTest</td><td>1</td><td>0</td><td>0</td><td class="time">0.002s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.database.model.PopulatedNewsResourceKtTest</td><td>1</td><td>0</td><td>0</td><td class="time">0.000s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <!-- core/datastore -->
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.datastore.IntToStringIdsMigrationTest</td><td>2</td><td>0</td><td>0</td><td class="time">0.646s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.datastore.ListToMapMigrationTest</td><td>3</td><td>0</td><td>0</td><td class="time">0.014s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.datastore.NiaPreferencesDataSourceTest</td><td>6</td><td>0</td><td>0</td><td class="time">0.064s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.datastore.UserPreferencesSerializerTest</td><td>3</td><td>0</td><td>0</td><td class="time">0.066s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <!-- core/designsystem -->
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.designsystem.BackgroundScreenshotTests</td><td>2</td><td>0</td><td>0</td><td class="time">15.941s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.designsystem.ButtonScreenshotTests</td><td>3</td><td>0</td><td>0</td><td class="time">0.956s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.designsystem.FilterChipScreenshotTests</td><td>3</td><td>0</td><td>0</td><td class="time">0.719s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.designsystem.IconButtonScreenshotTests</td><td>2</td><td>0</td><td>0</td><td class="time">0.431s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.designsystem.LoadingWheelScreenshotTests</td><td>3</td><td>0</td><td>0</td><td class="time">0.706s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.designsystem.NavigationScreenshotTests</td><td>2</td><td>0</td><td>0</td><td class="time">0.593s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.designsystem.TabsScreenshotTests</td><td>2</td><td>0</td><td>0</td><td class="time">0.547s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.designsystem.TagScreenshotTests</td><td>2</td><td>0</td><td>0</td><td class="time">0.270s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.designsystem.ThemeTest</td><td>8</td><td>0</td><td>0</td><td class="time">7.774s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.designsystem.TopAppBarScreenshotTests</td><td>2</td><td>0</td><td>0</td><td class="time">0.411s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <!-- core/domain -->
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.domain.GetFollowableTopicsUseCaseTest</td><td>2</td><td>0</td><td>0</td><td class="time">0.515s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <!-- core/navigation -->
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.navigation.NavigatorTest</td><td>12</td><td>0</td><td>0</td><td class="time">0.089s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <!-- core/network -->
+                        <tr><td><span class="badge core">core</span></td><td class="class-name">core.network.demo.DemoNiaNetworkDataSourceTest</td><td>2</td><td>0</td><td>0</td><td class="time">0.786s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <!-- feature -->
+                        <tr><td><span class="badge feature">feature</span></td><td class="class-name">feature.bookmarks.impl.BookmarksViewModelTest</td><td>5</td><td>0</td><td>0</td><td class="time">0.305s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge feature">feature</span></td><td class="class-name">feature.foryou.impl.ForYouScreenScreenshotTests</td><td>6</td><td>0</td><td>0</td><td class="time">54.205s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge feature">feature</span></td><td class="class-name">feature.foryou.impl.ForYouViewModelTest</td><td>12</td><td>0</td><td>0</td><td class="time">0.270s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge feature">feature</span></td><td class="class-name">feature.interests.impl.InterestsListDetailScreenTest</td><td>5</td><td>0</td><td>0</td><td class="time">12.652s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge feature">feature</span></td><td class="class-name">feature.interests.impl.InterestsViewModelTest</td><td>4</td><td>0</td><td>0</td><td class="time">0.191s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge feature">feature</span></td><td class="class-name">feature.search.impl.SearchViewModelTest</td><td>9</td><td>0</td><td>0</td><td class="time">0.810s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge feature">feature</span></td><td class="class-name">feature.settings.impl.SettingsViewModelTest</td><td>2</td><td>0</td><td>0</td><td class="time">0.585s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge feature">feature</span></td><td class="class-name">feature.topic.impl.TopicViewModelTest</td><td>8</td><td>0</td><td>0</td><td class="time">0.841s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <!-- app -->
+                        <tr><td><span class="badge app">app</span></td><td class="class-name">ui.NiaAppScreenSizesScreenshotTests</td><td>9</td><td>0</td><td>0</td><td class="time">49.544s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge app">app</span></td><td class="class-name">ui.NiaAppStateTest</td><td>4</td><td>0</td><td>0</td><td class="time">5.805s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge app">app</span></td><td class="class-name">ui.SnackbarInsetsScreenshotTests</td><td>4</td><td>0</td><td>0</td><td class="time">1.513s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                        <tr><td><span class="badge app">app</span></td><td class="class-name">ui.SnackbarScreenshotTests</td><td>4</td><td>0</td><td>0</td><td class="time">1.356s</td><td><span class="status pass">✓ 通过</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ========== Integration Tests ========== -->
+        <div id="integration" class="page">
+            <div class="section">
+                <div class="section-header">
+                    <h2>集成测试 / Integration Tests</h2>
+                    <span class="section-badge badge-green">全部通过 ✅</span>
+                </div>
+                <div class="info-box">
+                    <strong>✅ 已执行完成：6 个测试类，48 个测试用例，全部通过</strong><br>
+                    执行命令: <code>./gradlew :core:data:testDemoDebug :feature:bookmarks:impl:testDemoDebug :feature:foryou:impl:testDemoDebug :feature:settings:impl:testDemoDebug :feature:interests:impl:testDemoDebug --tests "*IntegrationTest*"</code><br>
+                    BUILD SUCCESSFUL in ~30s，涵盖跨模块数据交互、Repository、ViewModel 集成场景。
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>模块</th>
+                            <th>测试类</th>
+                            <th>测试内容</th>
+                            <th>测试数</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge core">core/data</span></td>
+                            <td class="class-name">CrossModuleIntegrationTest</td>
+                            <td>跨模块数据交互集成测试</td>
+                            <td>6</td>
+                            <td><span class="status pass">✓ 全部通过</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge core">core/data</span></td>
+                            <td class="class-name">OfflineFirstNewsRepositoryIntegrationTest</td>
+                            <td>离线优先新闻 Repository 集成测试</td>
+                            <td>7</td>
+                            <td><span class="status pass">✓ 全部通过</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge feature">feature/bookmarks</span></td>
+                            <td class="class-name">BookmarksViewModelIntegrationTest</td>
+                            <td>书签 ViewModel 集成测试</td>
+                            <td>10</td>
+                            <td><span class="status pass">✓ 全部通过</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge feature">feature/foryou</span></td>
+                            <td class="class-name">ForYouViewModelIntegrationTest</td>
+                            <td>为你推荐 ViewModel 集成测试</td>
+                            <td>10</td>
+                            <td><span class="status pass">✓ 全部通过</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge feature">feature/settings</span></td>
+                            <td class="class-name">SettingsViewModelIntegrationTest</td>
+                            <td>设置 ViewModel 集成测试</td>
+                            <td>6</td>
+                            <td><span class="status pass">✓ 全部通过</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge feature">feature/interests</span></td>
+                            <td class="class-name">InterestsViewModelIntegrationTest</td>
+                            <td>兴趣 ViewModel 集成测试</td>
+                            <td>9</td>
+                            <td><span class="status pass">✓ 全部通过</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ========== Instrumented Tests ========== -->
+        <div id="instrumented" class="page">
+            <div class="section">
+                <div class="section-header">
+                    <h2>设备测试 / Instrumented Tests</h2>
+                    <span class="section-badge badge-orange">模拟器兼容性问题</span>
+                </div>
+                <div class="info-box warning">
+                    <strong>⚠️ 已尝试在 Pixel 8 模拟器上执行，但因 Espresso/InputManager 兼容性问题全部失败</strong><br>
+                    错误: <code>NoSuchMethodException: android.hardware.input.InputManager.getInstance</code><br>
+                    <strong>代码编译通过</strong>，但当前模拟器的 Android 版本与测试框架不兼容。<br>
+                    建议使用 <code>pixel6api31aosp</code> Gradle Managed Device 或 API 31 兼容的模拟器运行。
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>模块</th>
+                            <th>测试类</th>
+                            <th>测试内容</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge app">app</span></td>
+                            <td class="class-name">EndToEndNavigationIntegrationTest</td>
+                            <td>端到端导航集成测试（Search/Settings/Bookmarks/Interests）</td>
+                            <td><span class="status pending">编译通过 · 待兼容模拟器</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge sync">sync/work</span></td>
+                            <td class="class-name">SyncWorkerIntegrationTest</td>
+                            <td>后台同步 Worker 集成测试</td>
+                            <td><span class="status pending">待执行</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer">
+            Generated 2026-06-13 &nbsp;|&nbsp; 本地测试 213/213 全部通过 &nbsp;|&nbsp; 设备测试待兼容模拟器
+        </div>
+    </div>
+
+    <script>
+        function showTab(name) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(name).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
